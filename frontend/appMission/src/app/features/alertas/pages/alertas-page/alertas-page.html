@@ -1,0 +1,82 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Alertas</h1>
+      <p>
+        @if (summary(); as s) {
+          {{ s.no_leidas }} sin leer de {{ s.total }} totales.
+        } @else {
+          Centro de notificaciones de riesgo e indicadores.
+        }
+      </p>
+    </div>
+    <button mat-stroked-button type="button" (click)="markAllRead()">Marcar todas como leídas</button>
+  </header>
+
+  <mat-card>
+    <mat-card-content>
+      <form class="filters" [formGroup]="filters" (ngSubmit)="load()">
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="leida">
+            <mat-option value="">Todas</mat-option>
+            <mat-option value="false">No leídas</mat-option>
+            <mat-option value="true">Leídas</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo</mat-label>
+          <mat-select formControlName="tipo">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="RIESGO">Riesgo</mat-option>
+            <mat-option value="TIPO_CAMBIO">Tipo de cambio</mat-option>
+            <mat-option value="INDICADOR">Indicador</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Severidad</mat-label>
+          <mat-select formControlName="severidad">
+            <mat-option value="">Todas</mat-option>
+            <mat-option value="INFO">Info</mat-option>
+            <mat-option value="WARNING">Warning</mat-option>
+            <mat-option value="CRITICAL">Critical</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-stroked-button type="submit">Filtrar</button>
+      </form>
+
+      @if (alerts().length) {
+        <div class="alerts-list">
+          @for (alert of alerts(); track alert.id) {
+            <article class="alert-item" [class.unread]="!alert.leida" [attr.data-severity]="alert.severidad">
+              <div class="alert-main">
+                <div class="alert-meta">
+                  <span class="chip">{{ alert.tipo_alerta }}</span>
+                  <span class="chip severity">{{ alert.severidad }}</span>
+                  @if (alert.pais) {
+                    <a [routerLink]="['/paises', alert.pais]">{{ alert.pais_nombre || alert.pais }}</a>
+                  }
+                  <time>{{ alert.fecha_creacion | date: 'short' }}</time>
+                </div>
+                <h3>{{ alert.titulo }}</h3>
+                <p>{{ alert.mensaje }}</p>
+              </div>
+              @if (!alert.leida) {
+                <button mat-button type="button" (click)="markRead(alert)">Marcar leída</button>
+              }
+            </article>
+          }
+        </div>
+      } @else if (!loading()) {
+        <app-empty-state
+          icon="notifications_none"
+          title="Sin alertas"
+          message="No hay alertas para los filtros seleccionados."
+        />
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

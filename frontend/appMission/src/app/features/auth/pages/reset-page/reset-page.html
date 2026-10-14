@@ -1,0 +1,57 @@
+<div class="auth-page">
+  <mat-card class="auth-card">
+    <mat-card-header>
+      <mat-card-title>Restablecer contraseña</mat-card-title>
+      <mat-card-subtitle>DataPulse Mission</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (!linkValid) {
+        <p class="auth-links">
+          El enlace de recuperación no es válido o está incompleto.
+          <a routerLink="/auth/recovery">Solicitar uno nuevo</a>
+        </p>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Nueva contraseña</mat-label>
+            <input
+              matInput
+              type="password"
+              formControlName="password"
+              autocomplete="new-password"
+            />
+            @if (form.controls.password.hasError('required')) {
+              <mat-error>La contraseña es obligatoria.</mat-error>
+            } @else if (form.controls.password.hasError('minlength')) {
+              <mat-error>Mínimo 8 caracteres.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Confirmar contraseña</mat-label>
+            <input
+              matInput
+              type="password"
+              formControlName="password_confirm"
+              autocomplete="new-password"
+            />
+            @if (form.controls.password_confirm.hasError('required')) {
+              <mat-error>Confirma la contraseña.</mat-error>
+            } @else if (form.hasError('passwordsMismatch') && form.controls.password_confirm.touched) {
+              <mat-error>Las contraseñas no coinciden.</mat-error>
+            }
+          </mat-form-field>
+
+          <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+            {{ submitting() ? 'Guardando...' : 'Actualizar contraseña' }}
+          </button>
+        </form>
+      }
+
+      <p class="auth-links">
+        <a routerLink="/auth/login">Volver al inicio de sesión</a>
+      </p>
+    </mat-card-content>
+  </mat-card>
+</div>

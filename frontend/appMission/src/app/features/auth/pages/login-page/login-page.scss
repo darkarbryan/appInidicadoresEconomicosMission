@@ -18,3 +18,15 @@
   gap: 0.75rem;
   margin-top: 1rem;
 }
+
+.auth-links {
+  margin-top: 1rem;
+  text-align: center;
+  font: var(--mat-sys-body-medium);
+
+  a {
+    color: var(--mat-sys-primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+}

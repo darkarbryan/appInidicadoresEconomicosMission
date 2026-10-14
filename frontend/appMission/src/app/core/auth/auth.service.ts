@@ -76,6 +76,25 @@ export class AuthService {
   }
 
   /**
+   * Request password-recovery instructions for the given email.
+   */
+  passwordRecovery(email: string): Observable<{ detail: string }> {
+    return this.api.post<{ detail: string }>(API_ENDPOINTS.auth.passwordRecovery, { email });
+  }
+
+  /**
+   * Reset the account password using the recovery link payload.
+   */
+  passwordReset(payload: {
+    uid: string;
+    token: string;
+    password: string;
+    password_confirm: string;
+  }): Observable<{ detail: string }> {
+    return this.api.post<{ detail: string }>(API_ENDPOINTS.auth.passwordReset, payload);
+  }
+
+  /**
    * Invalidate the refresh token on the server and clear local session data.
    */
   logout(): Observable<{ detail: string }> {

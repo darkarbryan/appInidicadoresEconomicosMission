@@ -7,8 +7,15 @@ export const PORTAFOLIOS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./pages/portafolios-placeholder/portafolios-placeholder').then(
-        (m) => m.PortafoliosPlaceholder,
+      import('./pages/portafolios-list-page/portafolios-list-page').then(
+        (m) => m.PortafoliosListPage,
+      ),
+  },
+  {
+    path: ':id',
+    loadComponent: () =>
+      import('./pages/portafolio-detail-page/portafolio-detail-page').then(
+        (m) => m.PortafolioDetailPage,
       ),
   },
 ];

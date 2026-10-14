@@ -1,0 +1,179 @@
+<section class="page">
+  <a routerLink="/portafolios" mat-button type="button">← Volver a portafolios</a>
+
+  @if (portfolio(); as p) {
+    <header class="page-header">
+      <div>
+        <h1>{{ p.nombre }}</h1>
+        <p>{{ p.descripcion || 'Sin descripción' }}</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="exportPdf()">Exportar PDF</button>
+    </header>
+
+    <div class="kpi-row">
+      <mat-card>
+        <mat-card-subtitle>Monto total USD</mat-card-subtitle>
+        <mat-card-title>{{ p.metricas.monto_total_usd | number: '1.0-2' }}</mat-card-title>
+      </mat-card>
+      <mat-card>
+        <mat-card-subtitle>Riesgo ponderado</mat-card-subtitle>
+        <mat-card-title>
+          {{
+            p.metricas.riesgo_promedio_ponderado == null
+              ? '—'
+              : (p.metricas.riesgo_promedio_ponderado | number: '1.1-2')
+          }}
+        </mat-card-title>
+      </mat-card>
+      <mat-card>
+        <mat-card-subtitle>Posiciones abiertas</mat-card-subtitle>
+        <mat-card-title>{{ p.metricas.posiciones_abiertas }}</mat-card-title>
+      </mat-card>
+    </div>
+
+    <div class="charts">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Distribución por país</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (distributionBars().paises.length) {
+            @for (item of distributionBars().paises; track item.label) {
+              <div class="bar-row">
+                <span>{{ item.label }}</span>
+                <div class="track">
+                  <div class="fill" [style.width.%]="item.porcentaje"></div>
+                </div>
+                <strong>{{ item.porcentaje | number: '1.0-1' }}%</strong>
+              </div>
+            }
+          } @else {
+            <app-empty-state title="Sin distribución" message="Agrega posiciones para ver el desglose." />
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Distribución por tipo</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (distributionBars().tipos.length) {
+            @for (item of distributionBars().tipos; track item.label) {
+              <div class="bar-row">
+                <span>{{ item.label }}</span>
+                <div class="track">
+                  <div class="fill alt" [style.width.%]="item.porcentaje"></div>
+                </div>
+                <strong>{{ item.porcentaje | number: '1.0-1' }}%</strong>
+              </div>
+            }
+          } @else {
+            <app-empty-state title="Sin distribución" message="Agrega posiciones para ver el desglose." />
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    @if (canWrite()) {
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Agregar posición</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <form class="position-form" [formGroup]="form" (ngSubmit)="addPosition()">
+            <mat-form-field appearance="outline">
+              <mat-label>País</mat-label>
+              <mat-select formControlName="pais">
+                @for (c of countries(); track c.codigo_iso) {
+                  <mat-option [value]="c.codigo_iso">{{ c.nombre }} ({{ c.codigo_iso }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Tipo de activo</mat-label>
+              <mat-select formControlName="tipo_activo">
+                <mat-option value="RENTA_FIJA">Renta fija</mat-option>
+                <mat-option value="RENTA_VARIABLE">Renta variable</mat-option>
+                <mat-option value="COMMODITIES">Commodities</mat-option>
+                <mat-option value="MONEDA">Moneda</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Monto USD</mat-label>
+              <input matInput type="number" formControlName="monto_inversion_usd" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha entrada</mat-label>
+              <input matInput type="date" formControlName="fecha_entrada" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="notes">
+              <mat-label>Notas</mat-label>
+              <input matInput formControlName="notas" />
+            </mat-form-field>
+
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+              {{ saving() ? 'Guardando...' : 'Agregar' }}
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Posiciones</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (p.posiciones.length) {
+          <table mat-table [dataSource]="p.posiciones" class="full-table">
+            <ng-container matColumnDef="pais_nombre">
+              <th mat-header-cell *matHeaderCellDef>País</th>
+              <td mat-cell *matCellDef="let row">{{ row.pais_nombre }} ({{ row.pais }})</td>
+            </ng-container>
+            <ng-container matColumnDef="tipo_activo">
+              <th mat-header-cell *matHeaderCellDef>Tipo</th>
+              <td mat-cell *matCellDef="let row">{{ row.tipo_activo }}</td>
+            </ng-container>
+            <ng-container matColumnDef="monto_inversion_usd">
+              <th mat-header-cell *matHeaderCellDef>Monto USD</th>
+              <td mat-cell *matCellDef="let row">{{ row.monto_inversion_usd | number: '1.0-2' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="fecha_entrada">
+              <th mat-header-cell *matHeaderCellDef>Entrada</th>
+              <td mat-cell *matCellDef="let row">{{ row.fecha_entrada }}</td>
+            </ng-container>
+            <ng-container matColumnDef="fecha_salida">
+              <th mat-header-cell *matHeaderCellDef>Salida</th>
+              <td mat-cell *matCellDef="let row">{{ row.fecha_salida || 'Abierta' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="acciones">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row">
+                @if (canWrite() && !row.fecha_salida) {
+                  <button mat-button color="warn" type="button" (click)="closePosition(row.id)">
+                    Cerrar
+                  </button>
+                }
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="positionColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: positionColumns"></tr>
+          </table>
+        } @else {
+          <app-empty-state title="Sin posiciones" message="Este portafolio aún no tiene inversiones." />
+        }
+      </mat-card-content>
+    </mat-card>
+  } @else if (!loading()) {
+    <app-empty-state
+      icon="account_balance_wallet"
+      title="Portafolio no encontrado"
+      message="El portafolio solicitado no existe o no tienes acceso."
+    />
+  }
+</section>

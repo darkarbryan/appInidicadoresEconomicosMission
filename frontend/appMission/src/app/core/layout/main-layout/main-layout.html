@@ -1,10 +1,32 @@
 <mat-sidenav-container class="layout-container">
-  <mat-sidenav mode="side" opened class="layout-sidenav">
+  <mat-sidenav
+    [mode]="isMobile() ? 'over' : 'side'"
+    [opened]="sidenavOpened()"
+    (openedChange)="sidenavOpened.set($event)"
+    class="layout-sidenav"
+  >
     <div class="brand">DataPulse</div>
     <mat-nav-list>
       @for (item of navItems; track item.path) {
-        <a mat-list-item [routerLink]="item.path" routerLinkActive="active">
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        <a
+          mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          (click)="onNavClick()"
+        >
+          @if (item.badge) {
+            <mat-icon
+              matListItemIcon
+              [matBadge]="alertas.unreadCount()"
+              [matBadgeHidden]="!alertas.unreadCount()"
+              matBadgeSize="small"
+              matBadgeColor="warn"
+            >
+              {{ item.icon }}
+            </mat-icon>
+          } @else {
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          }
           <span matListItemTitle>{{ item.label }}</span>
         </a>
       }
@@ -13,6 +35,15 @@
 
   <mat-sidenav-content>
     <mat-toolbar color="primary" class="layout-toolbar">
+      <button
+        mat-icon-button
+        type="button"
+        class="menu-toggle"
+        aria-label="Abrir menú"
+        (click)="toggleSidenav()"
+      >
+        <mat-icon>menu</mat-icon>
+      </button>
       <span class="toolbar-title">Mission Indicators</span>
       <span class="spacer"></span>
       @if (auth.currentUser(); as user) {

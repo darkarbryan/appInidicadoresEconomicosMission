@@ -23,6 +23,10 @@
   font-weight: 500;
 }
 
+.menu-toggle {
+  margin-right: 0.25rem;
+}
+
 .spacer {
   flex: 1 1 auto;
 }
@@ -41,4 +45,14 @@
 
 a.active {
   background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+}
+
+@media (max-width: 900px) {
+  .user-chip {
+    display: none;
+  }
+
+  .layout-content {
+    padding: 1rem;
+  }
 }

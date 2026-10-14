@@ -1,0 +1,76 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+}
+
+.page-header p {
+  margin: 0.25rem 0 0;
+  color: color-mix(in srgb, var(--mat-sys-on-surface) 70%, transparent);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.4fr;
+  gap: 1rem;
+}
+
+.risk-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.risk-score {
+  font: var(--mat-sys-display-small);
+  font-weight: 700;
+}
+
+.risk-chip {
+  align-self: flex-start;
+  display: inline-flex;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font: var(--mat-sys-label-small);
+  font-weight: 700;
+}
+
+.risk-chip[data-level='BAJO'] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.risk-chip[data-level='MODERADO'] {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.risk-chip[data-level='ALTO'] {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.risk-chip[data-level='CRITICO'] {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.full-table {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

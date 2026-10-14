@@ -1,0 +1,67 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Países</h1>
+      <p>{{ total() }} países disponibles en el catálogo.</p>
+    </div>
+  </header>
+
+  <mat-card>
+    <mat-card-content>
+      <form class="filters" [formGroup]="filters" (ngSubmit)="load()">
+        <mat-form-field appearance="outline">
+          <mat-label>Buscar</mat-label>
+          <input matInput formControlName="search" placeholder="Nombre o ISO" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Región</mat-label>
+          <mat-select formControlName="region">
+            <mat-option value="">Todas</mat-option>
+            <mat-option value="ANDINA">Andina</mat-option>
+            <mat-option value="CONO_SUR">Cono Sur</mat-option>
+            <mat-option value="CENTROAMERICA">Centroamérica</mat-option>
+            <mat-option value="CARIBE">Caribe</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-stroked-button type="submit">Filtrar</button>
+      </form>
+
+      @if (countries().length) {
+        <table mat-table [dataSource]="countries()" class="full-table">
+          <ng-container matColumnDef="nombre">
+            <th mat-header-cell *matHeaderCellDef>País</th>
+            <td mat-cell *matCellDef="let row">
+              <a [routerLink]="['/paises', row.codigo_iso]">{{ row.nombre }}</a>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="codigo_iso">
+            <th mat-header-cell *matHeaderCellDef>ISO</th>
+            <td mat-cell *matCellDef="let row">{{ row.codigo_iso }}</td>
+          </ng-container>
+          <ng-container matColumnDef="region">
+            <th mat-header-cell *matHeaderCellDef>Región</th>
+            <td mat-cell *matCellDef="let row">{{ row.region }}</td>
+          </ng-container>
+          <ng-container matColumnDef="moneda_codigo">
+            <th mat-header-cell *matHeaderCellDef>Moneda</th>
+            <td mat-cell *matCellDef="let row">{{ row.moneda_codigo }}</td>
+          </ng-container>
+          <ng-container matColumnDef="poblacion">
+            <th mat-header-cell *matHeaderCellDef>Población</th>
+            <td mat-cell *matCellDef="let row">{{ row.poblacion ?? '—' }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </table>
+      } @else if (!loading()) {
+        <app-empty-state
+          icon="public"
+          title="Sin países"
+          message="No hay resultados para los filtros aplicados."
+        />
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

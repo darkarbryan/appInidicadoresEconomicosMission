@@ -1,0 +1,118 @@
+<section class="page">
+  <a routerLink="/paises" mat-button type="button">← Volver al listado</a>
+
+  @if (country(); as pais) {
+    <header class="page-header">
+      <div>
+        <h1>{{ pais.nombre }} ({{ pais.codigo_iso }})</h1>
+        <p>{{ pais.region }} · {{ pais.moneda_nombre }} ({{ pais.moneda_codigo }})</p>
+      </div>
+    </header>
+
+    <div class="detail-grid">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Riesgo actual</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (pais.riesgo_actual; as riesgo) {
+            <div class="risk-box">
+              <div class="risk-score">{{ riesgo.indice_compuesto | number: '1.1-2' }}</div>
+              <span class="risk-chip" [attr.data-level]="riesgo.nivel_riesgo">
+                {{ riesgo.nivel_riesgo }}
+              </span>
+              <ul>
+                <li>Económico: {{ riesgo.score_economico | number: '1.1-2' }}</li>
+                <li>Cambiario: {{ riesgo.score_cambiario | number: '1.1-2' }}</li>
+                <li>Estabilidad: {{ riesgo.score_estabilidad | number: '1.1-2' }}</li>
+                <li>Fecha: {{ riesgo.fecha_calculo }}</li>
+              </ul>
+            </div>
+          } @else {
+            <app-empty-state title="Sin riesgo" message="Este país aún no tiene IRPC calculado." />
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Indicadores recientes</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (pais.indicadores_recientes?.length || indicators().length) {
+            <table
+              mat-table
+              [dataSource]="pais.indicadores_recientes?.length ? pais.indicadores_recientes : indicators()"
+              class="full-table"
+            >
+              <ng-container matColumnDef="tipo">
+                <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                <td mat-cell *matCellDef="let row">{{ row.tipo }}</td>
+              </ng-container>
+              <ng-container matColumnDef="anio">
+                <th mat-header-cell *matHeaderCellDef>Año</th>
+                <td mat-cell *matCellDef="let row">{{ row.anio }}</td>
+              </ng-container>
+              <ng-container matColumnDef="valor">
+                <th mat-header-cell *matHeaderCellDef>Valor</th>
+                <td mat-cell *matCellDef="let row">{{ row.valor | number: '1.0-2' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="unidad">
+                <th mat-header-cell *matHeaderCellDef>Unidad</th>
+                <td mat-cell *matCellDef="let row">{{ row.unidad }}</td>
+              </ng-container>
+              <ng-container matColumnDef="fuente">
+                <th mat-header-cell *matHeaderCellDef>Fuente</th>
+                <td mat-cell *matCellDef="let row">{{ row.fuente }}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="indicatorColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: indicatorColumns"></tr>
+            </table>
+          } @else if (!loading()) {
+            <app-empty-state title="Sin indicadores" message="No hay series económicas cargadas." />
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Tipo de cambio</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (rates().length) {
+          <table mat-table [dataSource]="rates()" class="full-table">
+            <ng-container matColumnDef="fecha">
+              <th mat-header-cell *matHeaderCellDef>Fecha</th>
+              <td mat-cell *matCellDef="let row">{{ row.fecha }}</td>
+            </ng-container>
+            <ng-container matColumnDef="tasa">
+              <th mat-header-cell *matHeaderCellDef>Tasa</th>
+              <td mat-cell *matCellDef="let row">{{ row.tasa | number: '1.2-6' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="variacion_porcentual">
+              <th mat-header-cell *matHeaderCellDef>Variación %</th>
+              <td mat-cell *matCellDef="let row">
+                {{ row.variacion_porcentual == null ? '—' : (row.variacion_porcentual | number: '1.2-2') }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="fuente">
+              <th mat-header-cell *matHeaderCellDef>Fuente</th>
+              <td mat-cell *matCellDef="let row">{{ row.fuente }}</td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="rateColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: rateColumns"></tr>
+          </table>
+        } @else if (!loading()) {
+          <app-empty-state title="Sin FX" message="No hay tipos de cambio registrados." />
+        }
+      </mat-card-content>
+    </mat-card>
+  } @else if (!loading()) {
+    <app-empty-state
+      icon="public_off"
+      title="País no encontrado"
+      message="El código ISO solicitado no existe o no está disponible."
+    />
+  }
+</section>

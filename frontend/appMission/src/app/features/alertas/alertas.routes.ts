@@ -7,8 +7,6 @@ export const ALERTAS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./pages/alertas-placeholder/alertas-placeholder').then(
-        (m) => m.AlertasPlaceholder,
-      ),
+      import('./pages/alertas-page/alertas-page').then((m) => m.AlertasPage),
   },
 ];

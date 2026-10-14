@@ -1,0 +1,83 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Portafolios</h1>
+      <p>Gestiona tus carteras e inversiones por país.</p>
+    </div>
+  </header>
+
+  @if (canWrite()) {
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Nuevo portafolio</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form class="create-form" [formGroup]="form" (ngSubmit)="create()">
+          <mat-form-field appearance="outline">
+            <mat-label>Nombre</mat-label>
+            <input matInput formControlName="nombre" />
+            @if (form.controls.nombre.hasError('required')) {
+              <mat-error>El nombre es obligatorio.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Descripción</mat-label>
+            <textarea matInput rows="2" formControlName="descripcion"></textarea>
+          </mat-form-field>
+
+          <mat-checkbox formControlName="es_publico">Público</mat-checkbox>
+
+          <button mat-flat-button color="primary" type="submit" [disabled]="creating()">
+            {{ creating() ? 'Creando...' : 'Crear' }}
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <mat-card>
+    <mat-card-content>
+      @if (portfolios().length) {
+        <table mat-table [dataSource]="portfolios()" class="full-table">
+          <ng-container matColumnDef="nombre">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let row">
+              <a [routerLink]="['/portafolios', row.id]">{{ row.nombre }}</a>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="total_posiciones">
+            <th mat-header-cell *matHeaderCellDef>Posiciones</th>
+            <td mat-cell *matCellDef="let row">{{ row.total_posiciones }}</td>
+          </ng-container>
+          <ng-container matColumnDef="es_publico">
+            <th mat-header-cell *matHeaderCellDef>Visibilidad</th>
+            <td mat-cell *matCellDef="let row">{{ row.es_publico ? 'Público' : 'Privado' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="fecha_modificacion">
+            <th mat-header-cell *matHeaderCellDef>Modificado</th>
+            <td mat-cell *matCellDef="let row">{{ row.fecha_modificacion | date: 'short' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="acciones">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row">
+              @if (canWrite()) {
+                <button mat-button color="warn" type="button" (click)="remove(row.id)">
+                  Eliminar
+                </button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </table>
+      } @else if (!loading()) {
+        <app-empty-state
+          icon="account_balance_wallet"
+          title="Sin portafolios"
+          message="Crea tu primer portafolio para comenzar a registrar posiciones."
+        />
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

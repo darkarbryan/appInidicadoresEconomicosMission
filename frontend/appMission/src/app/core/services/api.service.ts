@@ -45,9 +45,9 @@ export class ApiService {
   /**
    * Perform a DELETE request and return the envelope data payload.
    */
-  delete<T>(path: string): Observable<T> {
+  delete<T>(path: string, body?: unknown): Observable<T> {
     return this.http
-      .delete<ApiResponse<T>>(this.url(path))
+      .delete<ApiResponse<T>>(this.url(path), body !== undefined ? { body } : {})
       .pipe(map((response) => response.data));
   }
 
