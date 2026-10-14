@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apiMission.responses import error_response, ok_response
+from apps.activity.models import ActivityAction
+from apps.activity.services import log_activity
 from apps.users.serializers import (
     LoginSerializer,
     LogoutSerializer,
@@ -28,6 +30,14 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         tokens = serializer._tokens
+        log_activity(
+            usuario=user,
+            accion=ActivityAction.CREAR,
+            entidad_afectada="User",
+            entidad_id=user.id,
+            detalle={"email": user.email},
+            request=request,
+        )
         return ok_response(
             {
                 "user": UserSerializer(user).data,
@@ -49,6 +59,14 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         tokens = auth_service.issue_tokens_for_user(user)
+        log_activity(
+            usuario=user,
+            accion=ActivityAction.LOGIN,
+            entidad_afectada="User",
+            entidad_id=user.id,
+            detalle={"email": user.email},
+            request=request,
+        )
         return ok_response(
             {
                 "access": tokens["access"],

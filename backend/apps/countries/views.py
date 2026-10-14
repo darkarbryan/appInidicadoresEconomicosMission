@@ -16,6 +16,9 @@ from apps.countries.serializers import (
     EconomicIndicatorSerializer,
     ExchangeRateSerializer,
 )
+from apps.activity.models import ActivityAction
+from apps.activity.services import log_activity
+from apps.countries.services.fx_sync_service import sync_tipos_cambio
 from apps.countries.services.sync_service import sync_indicadores_world_bank
 from apps.users.permissions import IsAdminRole
 
@@ -186,6 +189,14 @@ class SyncIndicatorsView(APIView):
             )
 
         summary = sync_indicadores_world_bank(years=years)
+        log_activity(
+            usuario=request.user,
+            accion=ActivityAction.EDITAR,
+            entidad_afectada="EconomicIndicator",
+            entidad_id="sync",
+            detalle={"years": years, "upserted": summary.get("indicadores_upserted")},
+            request=request,
+        )
         if summary["errores"]:
             return warning_response(
                 {
@@ -196,6 +207,47 @@ class SyncIndicatorsView(APIView):
         return ok_response(
             {
                 "detail": "Sincronización de indicadores completada.",
+                "resumen": summary,
+            }
+        )
+
+
+class SyncExchangeRatesView(APIView):
+    """Trigger FX synchronization from ExchangeRate-API (ADMIN only)."""
+
+    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+
+    def post(self, request):
+        """Synchronize daily FX rates and emit variation alerts when needed."""
+        summary = sync_tipos_cambio()
+        log_activity(
+            usuario=request.user,
+            accion=ActivityAction.EDITAR,
+            entidad_afectada="ExchangeRate",
+            entidad_id="sync",
+            detalle={
+                "tasas_upserted": summary.get("tasas_upserted"),
+                "alertas_creadas": summary.get("alertas_creadas"),
+            },
+            request=request,
+        )
+        if summary["errores"] and summary["tasas_upserted"] == 0:
+            return error_response(
+                {
+                    "detail": "No se pudo sincronizar tipos de cambio.",
+                    "resumen": summary,
+                }
+            )
+        if summary["errores"]:
+            return warning_response(
+                {
+                    "detail": "Sincronización FX finalizada con errores parciales.",
+                    "resumen": summary,
+                }
+            )
+        return ok_response(
+            {
+                "detail": "Sincronización de tipos de cambio completada.",
                 "resumen": summary,
             }
         )

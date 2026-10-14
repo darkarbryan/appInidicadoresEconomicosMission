@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -12,6 +13,8 @@ from rest_framework.views import APIView
 
 from apiMission.pagination import StandardPagination
 from apiMission.responses import error_response, ok_response
+from apps.activity.models import ActivityAction
+from apps.activity.services import log_activity
 from apps.countries.models import RiskIndex
 from apps.portfolios.models import Portfolio, Position
 from apps.portfolios.permissions import CanManagePortfolios, IsPortfolioOwnerOrPublicRead
@@ -22,6 +25,7 @@ from apps.portfolios.serializers import (
     PositionSerializer,
     PositionWriteSerializer,
 )
+from apps.portfolios.services.pdf_service import build_portfolio_pdf
 from apps.users.models import Rol
 
 
@@ -69,6 +73,14 @@ class PortfolioListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         portfolio = serializer.save(usuario=request.user)
+        log_activity(
+            usuario=request.user,
+            accion=ActivityAction.CREAR,
+            entidad_afectada="Portfolio",
+            entidad_id=portfolio.id,
+            detalle={"nombre": portfolio.nombre},
+            request=request,
+        )
         return ok_response(
             PortfolioDetailSerializer(portfolio).data,
             http_status_code=status.HTTP_201_CREATED,
@@ -131,6 +143,14 @@ class PortfolioDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
         instance.activo = False
         instance.save(update_fields=["activo", "fecha_modificacion"])
+        log_activity(
+            usuario=request.user,
+            accion=ActivityAction.ELIMINAR,
+            entidad_afectada="Portfolio",
+            entidad_id=instance.id,
+            detalle={"soft_delete": True},
+            request=request,
+        )
         return ok_response({"detail": "Portafolio eliminado (soft delete).", "id": instance.id})
 
 
@@ -306,13 +326,16 @@ class PortfolioSummaryView(APIView):
 
 
 class PortfolioExportPdfView(APIView):
-    """Placeholder for PDF export until reportlab/weasyprint is added."""
+    """Export a portfolio report as a downloadable PDF file."""
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk):
-        """Return a structured export payload (PDF binary comes in a later pass)."""
-        portfolio = get_object_or_404(Portfolio, pk=pk)
+        """Generate and return a PDF binary for the requested portfolio."""
+        portfolio = get_object_or_404(
+            Portfolio.objects.select_related("usuario").prefetch_related("posiciones__pais"),
+            pk=pk,
+        )
         if (
             portfolio.usuario_id != request.user.id
             and not (portfolio.es_publico and portfolio.activo)
@@ -322,14 +345,17 @@ class PortfolioExportPdfView(APIView):
                 {"detail": "No tienes permiso para exportar este portafolio."},
                 http_status_code=status.HTTP_403_FORBIDDEN,
             )
-        detail = PortfolioDetailSerializer(portfolio).data
-        return ok_response(
-            {
-                "detail": (
-                    "Exportación PDF pendiente de librería de reportes. "
-                    "Se devuelve el payload listo para renderizar."
-                ),
-                "formato": "json_preview",
-                "portafolio": detail,
-            }
+
+        pdf_bytes = build_portfolio_pdf(portfolio)
+        log_activity(
+            usuario=request.user,
+            accion=ActivityAction.EXPORT,
+            entidad_afectada="Portfolio",
+            entidad_id=portfolio.id,
+            detalle={"formato": "pdf"},
+            request=request,
         )
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        filename = f"portafolio_{portfolio.id}.pdf"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
