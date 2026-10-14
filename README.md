@@ -1,6 +1,34 @@
 # DataPulse Latam — Mission Indicators
 
-Plataforma fullstack para monitorear indicadores económicos de Latinoamérica, calcular el índice de riesgo país compuesto (IRPC), gestionar portafolios de inversión simulados y emitir alertas automáticas.
+Plataforma **fullstack** para consultoría financiera sobre mercados latinoamericanos.
+
+Centraliza indicadores económicos, tipos de cambio, cálculo del **Índice de Riesgo País Compuesto (IRPC)**, portafolios de inversión simulados, alertas automáticas y un dashboard para la toma de decisiones.
+
+## ¿De qué trata?
+
+DataPulse Latam necesita dejar de recopilar datos en hojas de cálculo. Esta aplicación permite:
+
+- Consultar países de LatAm con indicadores (PIB, inflación, desempleo, etc.)
+- Sincronizar datos desde **World Bank**, **ExchangeRate-API** y **REST Countries**
+- Calcular y clasificar riesgo país (BAJO → CRÍTICO)
+- Armar portafolios con posiciones y exportar PDF
+- Recibir alertas (IRPC, FX, hiperinflación, sync)
+- Visualizar KPIs, ranking, tendencias (Chart.js) y mapa de riesgo
+
+## Estructura del repositorio
+
+```
+appIndicadoresEconomicosMission/
+├── backend/                 # API Django + DRF
+├── frontend/appMission/     # SPA Angular + Material
+├── docs/                    # Enunciado de la prueba técnica
+└── README.md                # Este archivo
+```
+
+Detalle de setup:
+
+- [Backend](./backend/README.md)
+- [Frontend](./frontend/appMission/README.md)
 
 ## Stack
 
@@ -8,128 +36,102 @@ Plataforma fullstack para monitorear indicadores económicos de Latinoamérica, 
 |------|------------|
 | Backend | Django 6 + Django REST Framework + SimpleJWT |
 | Frontend | Angular 22 + Angular Material + Chart.js |
-| Base de datos | PostgreSQL |
+| Base de datos | PostgreSQL 16 |
 | Deploy | Backend en Render, frontend en Vercel |
 
-## Arquitectura
+## Requisitos previos
 
+- Python **3.12+** (probado con 3.13)
+- Node.js **≥ 22.22.3** y npm
+- PostgreSQL **16** (local o Docker)
+- Git
+
+## Levantamiento local (resumen)
+
+### 1. Base de datos
+
+Con Docker (desde `backend/`):
+
+```bash
+cd backend
+# Copia .env.example → .env y ajusta DB_*
+docker compose -f docker.compose.yaml up -d
 ```
-frontend/appMission  →  Angular SPA (JWT Bearer)
-        │
-        ▼
-backend/apiMission   →  DRF API envelope {status, message, data}
-        │
-        ▼
-PostgreSQL           →  usuarios, paises, indicadores, FX, IRPC, portafolios, alertas
-        │
-        ▼
-APIs externas        →  World Bank, ExchangeRate-API, REST Countries
-```
 
-### Decisiones técnicas
+O usa un PostgreSQL local con la misma base/usuario/clave del `.env`.
 
-- Respuestas unificadas con envelope `{status, message, data}` y paginación estándar.
-- Auth JWT con rotación/blacklist de refresh tokens.
-- Soft-delete en portafolios y cierre de posiciones con `fecha_salida`.
-- IRPC calculado en servicio de dominio (`irpc_service`) tras sync de indicadores.
-- Sync World Bank / FX / REST Countries vía endpoints ADMIN y management commands.
-- Frontend con lazy loading, guards, interceptors (JWT, loading, errores) y Chart.js.
-
-## Setup local
-
-### Backend
+### 2. Backend
 
 ```bash
 cd backend
 python -m venv .venv
-# Windows: .venv\Scripts\activate
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+# source .venv/bin/activate
+
 pip install -r requirements.txt
-copy .env.example .env   # ajustar credenciales Postgres
+copy .env.example .env   # o: cp .env.example .env
 python manage.py migrate
 python manage.py seed_data
 python manage.py runserver
 ```
 
-API local: `http://127.0.0.1:8000/api/`
+API: **http://127.0.0.1:8000/api/**
 
-### Frontend
+### 3. Frontend
 
 ```bash
 cd frontend/appMission
 npm install
-copy .env.example .env   # NG_APP_API_BASE_URL=http://127.0.0.1:8000
 npm start
 ```
 
-App local: `http://localhost:4200`
+App: **http://localhost:4200**
 
-### Postgres con Docker
+Por defecto el frontend apunta al API en **Render**. Para usar el backend local, edita `src/environments/environment.development.ts` y deja:
 
-```bash
-cd backend
-docker compose -f docker.compose.yaml up -d
+```ts
+apiBaseUrl: 'http://127.0.0.1:8000',
 ```
 
-## Variables de entorno
+Asegura CORS en el `.env` del backend:
 
-Ver `backend/.env.example` y `frontend/appMission/.env.example`.
+```env
+FRONTEND_URL=http://localhost:4200
+CORS_ALLOWED_ORIGINS=http://localhost:4200,http://127.0.0.1:4200
+```
 
-Claves relevantes del backend: `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_*`, `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`.
+## Usuarios de prueba (seed)
 
-## Usuarios seed
-
-Tras `seed_data` (ajustar si el seeder define otros):
+Contraseña para todos: **`DataPulse2026!`**
 
 | Email | Rol |
 |-------|-----|
-| admin@datapulse.com | ADMIN |
-| analista@datapulse.com | ANALISTA |
-| viewer@datapulse.com | VIEWER |
+| `admin@datapulse.com` | ADMIN |
+| `analista@datapulse.com` | ANALISTA |
+| `viewer@datapulse.com` | VIEWER |
 
-## Management commands
+## Arquitectura (alto nivel)
 
-```bash
-python manage.py seed_data
-python manage.py sync_indicadores --years 5
-python manage.py sync_tipos_cambio
-python manage.py sync_paises_restcountries
+```
+Angular SPA (JWT)  →  Django REST API  →  PostgreSQL
+                           │
+                           ▼
+              World Bank / ExchangeRate-API / REST Countries
 ```
 
-`sync_indicadores` sincroniza World Bank y luego recalcula IRPC + alertas.
-
-## Endpoints principales
-
-| Área | Base |
-|------|------|
-| Auth | `/api/auth/` |
-| Países | `/api/paises/` |
-| Riesgo | `/api/riesgo/` |
-| Portafolios | `/api/portafolios/` |
-| Alertas | `/api/alertas/` |
-| Dashboard | `/api/dashboard/` |
-
-Admin-only: `POST /api/paises/sync-indicadores/`, `POST /api/paises/sync-tipos-cambio/`, `POST /api/riesgo/calcular/`.
-
-## Tests
-
-```bash
-cd backend
-python manage.py test apps.countries apps.users
-```
+Respuestas API con envelope `{ status, message, data }`.
 
 ## Deploy
 
-| Servicio | URL (ejemplo) |
+| Servicio | URL de ejemplo |
 |----------|----------------|
 | Frontend | https://app-inidicadores-economicos-mission.vercel.app |
-| Backend | URL pública de Render (configurar `CORS_ALLOWED_ORIGINS` y `FRONTEND_URL`) |
+| Backend | https://appinidicadoreseconomicosmission.onrender.com |
 
-En Render definir las mismas variables que en `.env.example` apuntando a la DB managed. En Vercel, `NG_APP_API_BASE_URL` debe apuntar al backend.
+En producción configura `CORS_ALLOWED_ORIGINS` / `FRONTEND_URL` en Render y la URL del API en los `environment*.ts` del frontend (o variables de build en Vercel).
 
-## Estructura del repo
+## Licencia / contexto
 
-```
-backend/          Django project (apiMission) + apps
-frontend/appMission/   Angular SPA
-docs/             Enunciado de la prueba técnica
-```
+Proyecto de **prueba técnica fullstack** (Angular + Django). Ver `docs/Prueba_Tecnica_Desarrollador.pdf`.

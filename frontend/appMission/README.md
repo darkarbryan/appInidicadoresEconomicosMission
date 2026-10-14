@@ -1,59 +1,102 @@
-# AppMission
+# Frontend — AppMission (DataPulse Latam)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.2.
+SPA en **Angular 22** + **Angular Material** + **Chart.js** para consumir la API DataPulse Mission.
 
-## Development server
+Permite login/registro, dashboard (KPIs, mapa de riesgo, ranking, tendencias), catálogo de países, portafolios con gráficos y export PDF, y panel de alertas con badge.
 
-To start a local development server, run:
+## Requisitos
 
-```bash
-ng serve
-```
+- Node.js **≥ 22.22.3**
+- npm (el proyecto declara `packageManager: npm@10.9.8`)
+- Backend API disponible (local o Render)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Setup local
 
 ```bash
-ng generate component component-name
+cd frontend/appMission
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Equivale a `ng serve`. Abre **http://localhost:4200**
+
+La app recarga en caliente al editar archivos.
+
+## Conectar al API
+
+La URL base del backend está en:
+
+- `src/environments/environment.development.ts` → usada con `ng serve`
+- `src/environments/environment.ts` → build de producción
+
+### Opción A — Backend en Render (por defecto)
+
+```ts
+apiBaseUrl: 'https://appinidicadoreseconomicosmission.onrender.com',
+```
+
+### Opción B — Backend local
+
+```ts
+apiBaseUrl: 'http://127.0.0.1:8000',
+```
+
+El backend debe permitir CORS desde `http://localhost:4200` (ver `backend/.env` → `CORS_ALLOWED_ORIGINS`).
+
+> Nota: el archivo `.env` / `NG_APP_API_BASE_URL` es referencia documental; la URL efectiva del cliente es la de `environment*.ts`.
+
+## Scripts npm
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm start` | Servidor de desarrollo (`ng serve`) |
+| `npm run build` | Build producción + copia `index.html` para Vercel SPA |
+| `npm test` | Tests unitarios (Vitest) |
+| `npm run watch` | Build en modo watch (development) |
+
+## Usuarios de prueba
+
+Si el backend tiene `seed_data` aplicado:
+
+| Email | Password | Rol |
+|-------|----------|-----|
+| `admin@datapulse.com` | `DataPulse2026!` | ADMIN |
+| `analista@datapulse.com` | `DataPulse2026!` | ANALISTA |
+| `viewer@datapulse.com` | `DataPulse2026!` | VIEWER |
+
+## Estructura relevante
+
+```
+src/app/
+├── core/           # auth, guards, interceptors, layout, ApiService
+├── features/
+│   ├── auth/       # login, register, recovery, reset
+│   ├── dashboard/  # KPIs, mapa, ranking, Chart.js
+│   ├── paises/     # lista + detalle
+│   ├── portafolios/# lista + detalle + PDF
+│   └── alertas/    # inbox + polling badge
+└── shared/         # empty-state, confirm-dialog, chart utils
+```
+
+- Lazy loading por feature
+- Interceptors: loading, JWT, errores (snackbar)
+- Guards: sesión (`authGuard`) y roles (`roleGuard`)
+- Polling de alertas no leídas cada 30 s en el layout
+
+## Build y Vercel
 
 ```bash
-ng generate --help
+npm run build
 ```
 
-## Building
+Salida: `dist/appMission/browser/`
 
-To build the project run:
+El build copia `index.csr.html` → `index.html` para que las rutas profundas (`/auth/login`, `/paises/CO`, etc.) no den 404 al refrescar. La config está en `vercel.json` (rewrites SPA).
 
-```bash
-ng build
-```
+Root Directory en Vercel: carpeta `frontend/appMission` (o la ruta equivalente del monorepo).
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Relación con el backend
 
-## Running unit tests
+Documentación API: [../../backend/README.md](../../backend/README.md)
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+README general: [../../README.md](../../README.md)
