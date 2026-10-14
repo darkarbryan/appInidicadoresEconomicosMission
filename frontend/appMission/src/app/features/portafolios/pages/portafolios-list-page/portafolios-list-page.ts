@@ -4,14 +4,17 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
+import { filter, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../../core/auth/auth.service';
 import { Portfolio } from '../../../../core/models/domain.model';
+import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { PortafoliosService } from '../../services/portafolios.service';
 
@@ -30,6 +33,7 @@ import { PortafoliosService } from '../../services/portafolios.service';
     MatCheckboxModule,
     MatButtonModule,
     MatTableModule,
+    MatDialogModule,
     EmptyState,
   ],
   templateUrl: './portafolios-list-page.html',
@@ -40,11 +44,19 @@ export class PortafoliosListPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   readonly loading = signal(true);
   readonly creating = signal(false);
   readonly portfolios = signal<Portfolio[]>([]);
-  readonly columns = ['nombre', 'total_posiciones', 'es_publico', 'fecha_modificacion', 'acciones'];
+  readonly columns = [
+    'nombre',
+    'total_posiciones',
+    'es_publico',
+    'propietario',
+    'fecha_modificacion',
+    'acciones',
+  ];
 
   readonly canWrite = () => {
     const role = this.auth.currentUser()?.rol;
@@ -66,13 +78,20 @@ export class PortafoliosListPage implements OnInit {
    */
   load(): void {
     this.loading.set(true);
-    this.portafoliosService.list({ mios: 1, activo: true }).subscribe({
+    this.portafoliosService.list({ activo: true }).subscribe({
       next: (page) => {
         this.portfolios.set(page.results);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  /**
+   * Return whether the portfolio belongs to the authenticated user.
+   */
+  isMine(portfolio: Portfolio): boolean {
+    return portfolio.usuario === this.auth.currentUser()?.id;
   }
 
   /**
@@ -97,18 +116,31 @@ export class PortafoliosListPage implements OnInit {
   }
 
   /**
-   * Soft-delete a portfolio and refresh the list.
+   * Soft-delete a portfolio after confirmation and refresh the list.
    */
-  remove(id: number): void {
-    if (!this.canWrite()) {
+  remove(portfolio: Portfolio): void {
+    if (!this.canWrite() || !this.isMine(portfolio)) {
       return;
     }
 
-    this.portafoliosService.remove(id).subscribe({
-      next: (data) => {
-        this.snackBar.open(data.detail, 'Cerrar', { duration: 3500 });
-        this.load();
-      },
-    });
+    this.dialog
+      .open(ConfirmDialog, {
+        data: {
+          title: 'Eliminar portafolio',
+          message: `¿Confirmas eliminar "${portfolio.nombre}"? Esta acción es un soft delete.`,
+          confirmLabel: 'Eliminar',
+        },
+      })
+      .afterClosed()
+      .pipe(
+        filter(Boolean),
+        switchMap(() => this.portafoliosService.remove(portfolio.id)),
+      )
+      .subscribe({
+        next: (data) => {
+          this.snackBar.open(data.detail, 'Cerrar', { duration: 3500 });
+          this.load();
+        },
+      });
   }
 }

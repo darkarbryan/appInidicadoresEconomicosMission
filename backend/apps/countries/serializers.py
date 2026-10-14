@@ -19,6 +19,7 @@ class CountrySerializer(serializers.ModelSerializer):
             "latitud",
             "longitud",
             "poblacion",
+            "bandera_url",
             "activo",
         )
 

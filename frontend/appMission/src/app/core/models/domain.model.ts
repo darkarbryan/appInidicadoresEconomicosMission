@@ -24,6 +24,7 @@ export interface Country {
   latitud: string | number;
   longitud: string | number;
   poblacion: number | null;
+  bandera_url?: string;
   activo: boolean;
 }
 
@@ -72,6 +73,8 @@ export interface RiskRankingItem {
   score_estabilidad: string | number;
   indice_compuesto: string | number;
   nivel_riesgo: RiskLevel;
+  variacion?: number | null;
+  tendencia?: 'ALCISTA' | 'BAJISTA' | 'ESTABLE' | string;
 }
 
 export interface DashboardSummary {

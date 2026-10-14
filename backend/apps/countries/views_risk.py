@@ -11,10 +11,9 @@ from rest_framework.views import APIView
 
 from apiMission.pagination import StandardPagination
 from apiMission.responses import ok_response, warning_response
-from apps.alerts.models import Alert, AlertSeverity, AlertType
 from apps.countries.models import Country, RiskIndex
 from apps.countries.serializers_risk import RiskIndexDetailSerializer, RiskRankingSerializer
-from apps.countries.services.irpc_service import guardar_irpc
+from apps.countries.services.risk_alerts_service import recalcular_irpc_con_alertas
 from apps.users.permissions import IsAdminRole
 
 
@@ -82,6 +81,7 @@ class RiskCountryDetailView(APIView):
                     "codigo_iso": country.codigo_iso,
                     "nombre": country.nombre,
                     "region": country.region,
+                    "bandera_url": country.bandera_url,
                 },
                 "actual": RiskIndexDetailSerializer(actual).data if actual else None,
                 "historico": RiskIndexDetailSerializer(history, many=True).data,
@@ -143,66 +143,12 @@ class RiskRecalculateView(APIView):
 
     def post(self, request):
         """Recalculate scores, persist snapshots and emit risk alerts."""
-        countries = Country.objects.filter(activo=True).order_by("codigo_iso")
-        resultados = []
-        alertas_creadas = 0
-
-        for country in countries:
-            previous = (
-                RiskIndex.objects.filter(pais=country).order_by("-fecha_calculo").first()
-            )
-            previous_score = float(previous.indice_compuesto) if previous else None
-            risk = guardar_irpc(country)
-            current_score = float(risk.indice_compuesto)
-            alerts = []
-
-            if current_score < 25:
-                Alert.objects.create(
-                    usuario=None,
-                    pais=country,
-                    tipo_alerta=AlertType.RIESGO,
-                    severidad=AlertSeverity.CRITICAL,
-                    titulo=f"IRPC crítico en {country.nombre}",
-                    mensaje=(
-                        f"El IRPC de {country.codigo_iso} cayó a {current_score} "
-                        f"(nivel {risk.nivel_riesgo})."
-                    ),
-                )
-                alertas_creadas += 1
-                alerts.append("CRITICAL_IRPC_BAJO")
-
-            if previous_score is not None and (previous_score - current_score) > 15:
-                Alert.objects.create(
-                    usuario=None,
-                    pais=country,
-                    tipo_alerta=AlertType.RIESGO,
-                    severidad=AlertSeverity.WARNING,
-                    titulo=f"Caída significativa de IRPC en {country.nombre}",
-                    mensaje=(
-                        f"El IRPC de {country.codigo_iso} bajó más de 15 puntos "
-                        f"({previous_score} -> {current_score})."
-                    ),
-                )
-                alertas_creadas += 1
-                alerts.append("WARNING_CAIDA_15")
-
-            resultados.append(
-                {
-                    "codigo_iso": country.codigo_iso,
-                    "indice_compuesto": current_score,
-                    "nivel_riesgo": risk.nivel_riesgo,
-                    "anterior": previous_score,
-                    "alertas": alerts,
-                }
-            )
-
+        summary = recalcular_irpc_con_alertas()
         payload = {
             "detail": "Recálculo de IRPC completado.",
             "fecha": timezone.now().isoformat(),
-            "paises_procesados": len(resultados),
-            "alertas_creadas": alertas_creadas,
-            "resultados": resultados,
+            **summary,
         }
-        if alertas_creadas:
+        if summary["alertas_creadas"]:
             return warning_response(payload)
         return ok_response(payload)

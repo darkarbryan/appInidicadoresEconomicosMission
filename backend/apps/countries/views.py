@@ -19,6 +19,7 @@ from apps.countries.serializers import (
 from apps.activity.models import ActivityAction
 from apps.activity.services import log_activity
 from apps.countries.services.fx_sync_service import sync_tipos_cambio
+from apps.countries.services.risk_alerts_service import recalcular_irpc_con_alertas
 from apps.countries.services.sync_service import sync_indicadores_world_bank
 from apps.users.permissions import IsAdminRole
 
@@ -189,24 +190,30 @@ class SyncIndicatorsView(APIView):
             )
 
         summary = sync_indicadores_world_bank(years=years)
+        irpc_summary = recalcular_irpc_con_alertas()
+        summary["irpc"] = irpc_summary
         log_activity(
             usuario=request.user,
             accion=ActivityAction.EDITAR,
             entidad_afectada="EconomicIndicator",
             entidad_id="sync",
-            detalle={"years": years, "upserted": summary.get("indicadores_upserted")},
+            detalle={
+                "years": years,
+                "upserted": summary.get("indicadores_upserted"),
+                "irpc_alertas": irpc_summary.get("alertas_creadas"),
+            },
             request=request,
         )
-        if summary["errores"]:
+        if summary["errores"] or irpc_summary.get("alertas_creadas"):
             return warning_response(
                 {
-                    "detail": "Sincronización finalizada con errores parciales.",
+                    "detail": "Sincronización finalizada; se recalculó IRPC.",
                     "resumen": summary,
                 }
             )
         return ok_response(
             {
-                "detail": "Sincronización de indicadores completada.",
+                "detail": "Sincronización de indicadores y recálculo IRPC completados.",
                 "resumen": summary,
             }
         )

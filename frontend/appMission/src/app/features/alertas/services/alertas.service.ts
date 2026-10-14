@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints';
 import { PaginatedData } from '../../../core/models/api-response.model';
@@ -13,6 +13,9 @@ import { ApiService } from '../../../core/services/api.service';
 export class AlertasService {
   private readonly api = inject(ApiService);
 
+  /** BehaviorSubject state store required by the tech-test statement. */
+  private readonly unreadSubject = new BehaviorSubject<number>(0);
+  readonly unreadCount$ = this.unreadSubject.asObservable();
   readonly unreadCount = signal(0);
 
   /**
@@ -38,7 +41,7 @@ export class AlertasService {
    */
   getSummary(): Observable<AlertsSummary> {
     return this.api.get<AlertsSummary>(API_ENDPOINTS.alerts.summary).pipe(
-      tap((summary) => this.unreadCount.set(summary.no_leidas)),
+      tap((summary) => this.setUnread(summary.no_leidas)),
     );
   }
 
@@ -48,9 +51,9 @@ export class AlertasService {
   markRead(id: number | string): Observable<AlertItem> {
     return this.api.put<AlertItem>(API_ENDPOINTS.alerts.markRead(id), {}).pipe(
       tap(() => {
-        const current = this.unreadCount();
+        const current = this.unreadSubject.value;
         if (current > 0) {
-          this.unreadCount.set(current - 1);
+          this.setUnread(current - 1);
         }
       }),
     );
@@ -62,6 +65,11 @@ export class AlertasService {
   markAllRead(): Observable<{ detail: string; actualizadas: number }> {
     return this.api
       .put<{ detail: string; actualizadas: number }>(API_ENDPOINTS.alerts.markAllRead, {})
-      .pipe(tap(() => this.unreadCount.set(0)));
+      .pipe(tap(() => this.setUnread(0)));
+  }
+
+  private setUnread(count: number): void {
+    this.unreadSubject.next(count);
+    this.unreadCount.set(count);
   }
 }

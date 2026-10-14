@@ -59,6 +59,7 @@ class Country(models.Model):
     latitud = models.DecimalField("latitud", max_digits=9, decimal_places=6)
     longitud = models.DecimalField("longitud", max_digits=9, decimal_places=6)
     poblacion = models.BigIntegerField("población", null=True, blank=True)
+    bandera_url = models.URLField("URL de bandera", max_length=500, blank=True, default="")
     activo = models.BooleanField("activo", default=True)
 
     class Meta:

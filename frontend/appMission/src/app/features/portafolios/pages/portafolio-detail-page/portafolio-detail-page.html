@@ -37,16 +37,10 @@
           <mat-card-title>Distribución por país</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          @if (distributionBars().paises.length) {
-            @for (item of distributionBars().paises; track item.label) {
-              <div class="bar-row">
-                <span>{{ item.label }}</span>
-                <div class="track">
-                  <div class="fill" [style.width.%]="item.porcentaje"></div>
-                </div>
-                <strong>{{ item.porcentaje | number: '1.0-1' }}%</strong>
-              </div>
-            }
+          @if (summary()?.distribucion_por_pais?.length) {
+            <div class="chart-wrap">
+              <canvas #paisCanvas></canvas>
+            </div>
           } @else {
             <app-empty-state title="Sin distribución" message="Agrega posiciones para ver el desglose." />
           }
@@ -58,16 +52,10 @@
           <mat-card-title>Distribución por tipo</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          @if (distributionBars().tipos.length) {
-            @for (item of distributionBars().tipos; track item.label) {
-              <div class="bar-row">
-                <span>{{ item.label }}</span>
-                <div class="track">
-                  <div class="fill alt" [style.width.%]="item.porcentaje"></div>
-                </div>
-                <strong>{{ item.porcentaje | number: '1.0-1' }}%</strong>
-              </div>
-            }
+          @if (summary()?.distribucion_por_tipo_activo?.length) {
+            <div class="chart-wrap">
+              <canvas #tipoCanvas></canvas>
+            </div>
           } @else {
             <app-empty-state title="Sin distribución" message="Agrega posiciones para ver el desglose." />
           }
@@ -113,7 +101,8 @@
 
             <mat-form-field appearance="outline" class="notes">
               <mat-label>Notas</mat-label>
-              <input matInput formControlName="notas" />
+              <input matInput formControlName="notas" maxlength="200" />
+              <mat-hint align="end">{{ form.controls.notas.value.length }}/200</mat-hint>
             </mat-form-field>
 
             <button mat-flat-button color="primary" type="submit" [disabled]="saving()">

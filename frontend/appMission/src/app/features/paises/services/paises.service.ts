@@ -68,4 +68,25 @@ export class PaisesService {
       { page_size: 30, ...query },
     );
   }
+
+  /**
+   * ADMIN: synchronize World Bank indicators and chain IRPC recalculation.
+   */
+  syncIndicators(years = 5): Observable<unknown> {
+    return this.api.post(API_ENDPOINTS.countries.syncIndicators, { years });
+  }
+
+  /**
+   * ADMIN: synchronize FX rates from ExchangeRate-API.
+   */
+  syncExchangeRates(): Observable<unknown> {
+    return this.api.post(API_ENDPOINTS.countries.syncFx, {});
+  }
+
+  /**
+   * ADMIN: recalculate IRPC for all active countries.
+   */
+  recalculateRisk(): Observable<unknown> {
+    return this.api.post(API_ENDPOINTS.risk.calculate, {});
+  }
 }

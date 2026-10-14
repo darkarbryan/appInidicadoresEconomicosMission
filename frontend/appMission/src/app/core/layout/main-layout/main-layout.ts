@@ -68,7 +68,7 @@ export class MainLayout implements OnInit {
       window.removeEventListener('resize', this.updateViewport);
     });
 
-    interval(60000)
+    interval(30000)
       .pipe(
         startWith(0),
         switchMap(() => this.alertas.getSummary()),

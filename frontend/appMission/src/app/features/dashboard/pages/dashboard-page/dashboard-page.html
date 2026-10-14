@@ -4,6 +4,16 @@
       <h1>Dashboard</h1>
       <p>Resumen regional de riesgo, alertas y portafolios.</p>
     </div>
+    @if (isAdmin()) {
+      <div class="admin-actions">
+        <button mat-stroked-button type="button" [disabled]="syncing()" (click)="runSyncIndicators()">
+          Sync indicadores
+        </button>
+        <button mat-stroked-button type="button" [disabled]="syncing()" (click)="runSyncFx()">
+          Sync FX
+        </button>
+      </div>
+    }
   </header>
 
   @if (summary(); as kpis) {
@@ -32,12 +42,12 @@
   <div class="panels">
     <mat-card class="panel">
       <mat-card-header>
-        <mat-card-title>Mapa de riesgo</mat-card-title>
-        <mat-card-subtitle>Posicionamiento por latitud/longitud</mat-card-subtitle>
+        <mat-card-title>Mapa de riesgo LatAm</mat-card-title>
+        <mat-card-subtitle>Color por nivel IRPC</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
         @if (mapPoints().length) {
-          <div class="risk-map">
+          <div class="risk-map" aria-label="Mapa de riesgo Latinoamérica">
             @for (point of mapPoints(); track point.codigo_iso) {
               <a
                 class="map-dot"
@@ -45,11 +55,17 @@
                 [style.left.%]="point.x"
                 [style.top.%]="point.y"
                 [style.background]="point.color"
-                [title]="point.nombre + ' · ' + point.nivel_riesgo"
+                [title]="point.nombre + ' · ' + point.nivel_riesgo + ' · IRPC ' + point.indice_compuesto"
               >
                 {{ point.codigo_iso }}
               </a>
             }
+          </div>
+          <div class="map-legend">
+            <span><i style="background:#22c55e"></i> Bajo</span>
+            <span><i style="background:#eab308"></i> Moderado</span>
+            <span><i style="background:#f97316"></i> Alto</span>
+            <span><i style="background:#ef4444"></i> Crítico</span>
           </div>
         } @else if (!loading()) {
           <app-empty-state
@@ -63,7 +79,7 @@
 
     <mat-card class="panel">
       <mat-card-header>
-        <mat-card-title>Ranking de riesgo</mat-card-title>
+        <mat-card-title>Ranking de riesgo (Top 10)</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         @if (ranking().length) {
@@ -88,9 +104,15 @@
                 </span>
               </td>
             </ng-container>
-            <ng-container matColumnDef="region">
-              <th mat-header-cell *matHeaderCellDef>Región</th>
-              <td mat-cell *matCellDef="let row">{{ row.region }}</td>
+            <ng-container matColumnDef="variacion">
+              <th mat-header-cell *matHeaderCellDef>Variación</th>
+              <td mat-cell *matCellDef="let row">
+                {{ row.variacion == null ? '—' : (row.variacion | number: '1.1-2') }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="tendencia">
+              <th mat-header-cell *matHeaderCellDef>Tendencia</th>
+              <td mat-cell *matCellDef="let row">{{ row.tendencia || 'ESTABLE' }}</td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="rankingColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: rankingColumns"></tr>
@@ -142,23 +164,10 @@
         <button mat-stroked-button type="submit">Aplicar</button>
       </form>
 
-      @if (trendBars().length) {
-        <div class="trend-grid">
-          @for (serie of trendBars(); track serie.codigo_iso) {
-            <div class="trend-serie">
-              <div class="serie-label">{{ serie.nombre }} ({{ serie.codigo_iso }})</div>
-              <div class="bars">
-                @for (bar of serie.bars; track bar.anio) {
-                  <div class="bar-wrap" [title]="bar.anio + ': ' + bar.valor">
-                    <div class="bar" [style.height.%]="bar.height"></div>
-                    <span>{{ bar.anio }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      } @else if (!loading()) {
+      <div class="chart-wrap">
+        <canvas #trendsCanvas></canvas>
+      </div>
+      @if (!trends()?.series?.length && !loading()) {
         <app-empty-state
           icon="show_chart"
           title="Sin series"

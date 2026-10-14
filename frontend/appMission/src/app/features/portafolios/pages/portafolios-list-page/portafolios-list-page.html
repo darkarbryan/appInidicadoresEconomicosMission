@@ -23,7 +23,8 @@
 
           <mat-form-field appearance="outline">
             <mat-label>Descripción</mat-label>
-            <textarea matInput rows="2" formControlName="descripcion"></textarea>
+            <textarea matInput rows="2" formControlName="descripcion" maxlength="500"></textarea>
+            <mat-hint align="end">{{ form.controls.descripcion.value.length }}/500</mat-hint>
           </mat-form-field>
 
           <mat-checkbox formControlName="es_publico">Público</mat-checkbox>
@@ -52,7 +53,18 @@
           </ng-container>
           <ng-container matColumnDef="es_publico">
             <th mat-header-cell *matHeaderCellDef>Visibilidad</th>
-            <td mat-cell *matCellDef="let row">{{ row.es_publico ? 'Público' : 'Privado' }}</td>
+            <td mat-cell *matCellDef="let row">
+              <span class="badge" [class.public]="row.es_publico">
+                {{ row.es_publico ? 'Público' : 'Privado' }}
+              </span>
+              @if (isMine(row)) {
+                <span class="badge mine">Mío</span>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="propietario">
+            <th mat-header-cell *matHeaderCellDef>Propietario</th>
+            <td mat-cell *matCellDef="let row">{{ row.usuario_email }}</td>
           </ng-container>
           <ng-container matColumnDef="fecha_modificacion">
             <th mat-header-cell *matHeaderCellDef>Modificado</th>
@@ -61,8 +73,8 @@
           <ng-container matColumnDef="acciones">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let row">
-              @if (canWrite()) {
-                <button mat-button color="warn" type="button" (click)="remove(row.id)">
+              @if (canWrite() && isMine(row)) {
+                <button mat-button color="warn" type="button" (click)="remove(row)">
                   Eliminar
                 </button>
               }
