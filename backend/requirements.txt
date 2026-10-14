@@ -4,3 +4,4 @@ python-dotenv
 djangorestframework
 djangorestframework-simplejwt
 gunicorn
+requests

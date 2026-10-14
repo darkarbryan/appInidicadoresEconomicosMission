@@ -12,4 +12,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api_root, name="api-root"),
     path("api/auth/", include("apps.users.urls")),
+    path("api/paises/", include("apps.countries.urls")),
+    path("api/riesgo/", include("apps.countries.urls_risk")),
+    path("api/portafolios/", include("apps.portfolios.urls")),
+    path("api/alertas/", include("apps.alerts.urls")),
+    path("api/dashboard/", include("apps.dashboard.urls")),
 ]
