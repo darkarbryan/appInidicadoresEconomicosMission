@@ -126,16 +126,28 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@datapulse.local")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:4200")
 
-# CORS: allow local Angular development against this API (including Render).
+# CORS: local Angular + Vercel frontend against this API (Render/local).
+_DEFAULT_CORS_ORIGINS = ",".join(
+    [
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "https://app-inidicadores-economicos-mission.vercel.app",
+    ]
+)
 CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:4200,http://127.0.0.1:4200",
-    ).split(",")
+    origin.strip().rstrip("/")
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", _DEFAULT_CORS_ORIGINS).split(",")
     if origin.strip()
 ]
+# Always include FRONTEND_URL when present and not already listed.
+if FRONTEND_URL:
+    _frontend_origin = FRONTEND_URL.strip().rstrip("/")
+    if _frontend_origin and _frontend_origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(_frontend_origin)
+
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = list(CORS_ALLOWED_ORIGINS)
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

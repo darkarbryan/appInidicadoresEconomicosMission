@@ -5,6 +5,23 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
+import { API_ENDPOINTS } from '../constants/api-endpoints';
+
+/** Auth endpoints where 401 means invalid input, not an expired session. */
+const PUBLIC_AUTH_PATHS = [
+  API_ENDPOINTS.auth.login,
+  API_ENDPOINTS.auth.register,
+  API_ENDPOINTS.auth.refresh,
+  API_ENDPOINTS.auth.passwordRecovery,
+  API_ENDPOINTS.auth.passwordReset,
+];
+
+/**
+ * Return true when the request targets a public auth endpoint.
+ */
+function isPublicAuthRequest(url: string): boolean {
+  return PUBLIC_AUTH_PATHS.some((path) => url.includes(path));
+}
 
 /**
  * Extract a Spanish user-facing message from a Mission API error payload.
@@ -48,7 +65,7 @@ function extractErrorMessage(error: HttpErrorResponse): string {
 }
 
 /**
- * Display API errors via snackbar and redirect to login on unauthorized responses.
+ * Display API errors via snackbar and redirect to login only on true session expiry.
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const snackBar = inject(MatSnackBar);
@@ -58,8 +75,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       const message = extractErrorMessage(error);
+      const publicAuth = isPublicAuthRequest(req.url);
 
-      if (error.status === 401) {
+      if (error.status === 401 && !publicAuth) {
         auth.clearSession();
         void router.navigate(['/auth/login']);
         snackBar.open('Tu sesión expiró. Inicia sesión nuevamente.', 'Cerrar', {
