@@ -1,0 +1,28 @@
+<mat-sidenav-container class="layout-container">
+  <mat-sidenav mode="side" opened class="layout-sidenav">
+    <div class="brand">DataPulse</div>
+    <mat-nav-list>
+      @for (item of navItems; track item.path) {
+        <a mat-list-item [routerLink]="item.path" routerLinkActive="active">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary" class="layout-toolbar">
+      <span class="toolbar-title">Mission Indicators</span>
+      <span class="spacer"></span>
+      @if (auth.currentUser(); as user) {
+        <span class="user-chip">{{ user.nombre_completo }} ({{ user.rol }})</span>
+      }
+      <button mat-button type="button" (click)="logout()">Salir</button>
+    </mat-toolbar>
+
+    <main class="layout-content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

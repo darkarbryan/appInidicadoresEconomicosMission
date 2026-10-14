@@ -1,0 +1,44 @@
+.layout-container {
+  height: 100vh;
+}
+
+.layout-sidenav {
+  width: 240px;
+  border-right: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
+}
+
+.brand {
+  padding: 1.25rem 1rem;
+  font: var(--mat-sys-title-large);
+  font-weight: 600;
+}
+
+.layout-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.toolbar-title {
+  font-weight: 500;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-chip {
+  margin-right: 0.75rem;
+  font: var(--mat-sys-label-large);
+  opacity: 0.9;
+}
+
+.layout-content {
+  padding: 1.25rem;
+  min-height: calc(100vh - 64px);
+  box-sizing: border-box;
+}
+
+a.active {
+  background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+}
